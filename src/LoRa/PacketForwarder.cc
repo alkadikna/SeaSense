@@ -34,6 +34,17 @@ void PacketForwarder::initialize(int stage)
         LoRa_GWPacketReceived = registerSignal("LoRa_GWPacketReceived");
         localPort = par("localPort");
         destPort = par("destPort");
+
+        throughputSignal = registerSignal("throughputSignal");
+        latencySignal = registerSignal("latencySignal");
+        packetLossSignal = registerSignal("packetLossSignal");
+        jitterSignal = registerSignal("jitterSignal");
+
+        counterOfSentPacketsFromNodes = 0;
+        counterOfReceivedPackets = 0;
+        lastPacketArrivalTime = SIMTIME_ZERO;
+        lastPacketArrivalInterval = 0.0;
+
     } else if (stage == INITSTAGE_APPLICATION_LAYER) {
         startUDP();
         getSimulation()->getSystemModule()->subscribe("LoRa_AppPacketSent", this);
@@ -83,6 +94,33 @@ void PacketForwarder::handleMessage(cMessage *msg)
             processLoraMACPacket(pkt);
         //send(msg, "upperLayerOut");
         //sendPacket();
+
+        // Menghitung latency jika ada paket sebelumnya yang diterima
+        if (lastPacketArrivalTime != SIMTIME_ZERO) {
+            double latency = (simTime() - lastPacketArrivalTime).dbl(); // Latency dalam detik
+            emit(latencySignal, latency);
+        }
+
+        lastPacketArrivalTime = simTime();  // Waktu kedatangan paket saat ini
+        counterOfReceivedPackets++;  // Menambah jumlah paket yang diterima
+
+        // Menghitung throughput: total paket diterima dibagi dengan waktu simulasi
+        double throughput = counterOfReceivedPackets / (simTime().dbl()); // throughput dalam paket per detik
+        emit(throughputSignal, throughput);
+
+        // Menghitung packet loss
+        double packetLoss = (counterOfSentPacketsFromNodes - counterOfReceivedPackets) / double(counterOfSentPacketsFromNodes);
+        emit(packetLossSignal, packetLoss);
+
+        // Menghitung jitter (perbedaan waktu kedatangan antar paket)
+        if (counterOfReceivedPackets > 1) {
+            double jitter = (simTime() - lastPacketArrivalTime).dbl() - lastPacketArrivalInterval;
+            emit(jitterSignal, jitter);
+        }
+
+        lastPacketArrivalInterval = (simTime() - lastPacketArrivalTime).dbl();  // Simpan interval antar kedatangan paket
+
+
     } else if (msg->arrivedOn("socketIn")) {
         // FIXME : debug for now to see if LoRaMAC frame received correctly from network server
         EV << "Received UDP packet" << endl;
@@ -102,7 +140,9 @@ void PacketForwarder::handleMessage(cMessage *msg)
         pkt->setPower(W(loRaTP));*/
 
         send(pkt, "lowerLayerOut");
-        //
+
+        // Menyimpan informasi paket yang dikirim
+        counterOfSentPacketsFromNodes++;  // Menambah jumlah paket yang dikirim
     }
 }
 

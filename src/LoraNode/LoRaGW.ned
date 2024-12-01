@@ -22,6 +22,7 @@ import inet.networklayer.contract.INetworkLayer;
 import inet.linklayer.loopback.LoopbackInterface;
 import flora.LoRa.LoRaGWNic;
 import flora.LoRaApp.SimpleLoRaApp;
+import flora.LoRaApp.GatewayApp;
 import flora.LoRa.PacketForwarder;
 import inet.linklayer.contract.IEthernetInterface;
 import inet.applications.contract.IApp;
@@ -48,6 +49,7 @@ module LoRaGW like INetworkNode
         int numUdpApps = default(0);
         bool hasUdp = default(firstAvailableOrEmpty("Udp") != "");
         string udpType = default(firstAvailableOrEmpty("UDP"));
+//		string udpType = default("");
 
 //        LoRaGWNic.radio.antenna.mobilityModule = default("^.^.^.mobility");
 
@@ -103,6 +105,10 @@ module LoRaGW like INetworkNode
             parameters:
                 @display("p=394.80002,206.42401");
         }
+//		udp: GatewayApp {
+//    		parameters:
+//        		@display("p=394.80002,206.42401");
+//		}
         ipv4: <default("Ipv4NetworkLayer")> like INetworkLayer if hasIpv4 {
             parameters:
                 @display("p=394.80002,333.888;q=queue");
@@ -119,8 +125,13 @@ module LoRaGW like INetworkNode
             @display("p=273.042,502.35");
         }
     connections allowunconnected:
+        //default
         at.out++ --> udp.appIn;
         at.in++ <-- udp.appOut;
+
+		//gatewayapp
+//        at.out++ --> udp.socketIn;
+//        at.in++ <-- udp.socketOut;
 
         packetForwarder.lowerLayerOut --> LoRaGWNic.upperLayerIn;
         LoRaGWNic.upperLayerOut --> packetForwarder.lowerLayerIn;
@@ -140,8 +151,14 @@ module LoRaGW like INetworkNode
         tn.in++ <-- ipv4.transportOut;
         cb.out++ --> nl.in++;
         cb.in++ <-- nl.out++;
+        
+//        default
         udp.ipOut --> tn.in++;
         udp.ipIn <-- tn.out++;
+		
+		//gatewayapp
+//		udp.socketOut --> tn.in++;
+//        udp.socketIn <-- tn.out++;
         
         cb.out++ --> bridging.upperLayerIn if exists(bridging);
         bridging.upperLayerOut --> cb.in++ if exists(bridging);

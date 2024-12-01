@@ -24,10 +24,23 @@ simple SimpleLoRaApp like IApp
 {
     parameters:
         @signal[LoRa_AppPacketSent](type=long); // optional
+//        @signal[throughputSignal](type=double);
+//        @signal[latencySignal](type=double);
+//        @signal[packetLossSignal](type=double);
+//        @signal[jitterSignal](type=double);
+        
+        
         @statistic[LoRa_AppPacketSent](source=LoRa_AppPacketSent; record=count);
+//        @statistic[throughputSignal](source=throughputSignal; record=histogram);
+//		@statistic[latencySignal](source=latencySignal; record=vector, mean, min, max);
+//		@statistic[packetLossSignal](source=packetLossSignal; record=histogram);
+//		@statistic[jitterSignal](source=jitterSignal; record=vector, mean, min, max);
+
+
         int numberOfPacketsToSend = default(1);
         volatile double timeToFirstPacket @unit(s) = default(10s);
         volatile double timeToNextPacket @unit(s) = default(10s);
+
         double initialLoRaTP @unit(dBm) = default(14dBm);
         double initialLoRaCF @unit(Hz) = default(868MHz);
         int initialLoRaSF = default(12);
@@ -36,7 +49,8 @@ simple SimpleLoRaApp like IApp
         bool initialUseHeader = default(true);
         bool evaluateADRinNode = default(false);
         int dataSize @unit(B) = default(10B);
+
     gates:
         input socketIn @labels(LoRaAppPacket/up);
-        output socketOut @labels(LoRaAppPacket/down);        
+        output socketOut @labels(LoRaAppPacket/down);
 }

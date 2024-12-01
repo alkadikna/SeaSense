@@ -51,6 +51,20 @@ class PacketForwarder : public cSimpleModule, public cListener
       simsignal_t LoRa_GWPacketReceived;
       int counterOfSentPacketsFromNodes = 0;
       int counterOfReceivedPackets = 0;
+
+      // Statistik sinyal
+      simsignal_t throughputSignal;
+      simsignal_t latencySignal;
+      simsignal_t packetLossSignal;
+      simsignal_t jitterSignal;
+
+      // Variabel untuk performa
+      simtime_t lastPacketArrivalTime; // Untuk menghitung jitter
+      int totalPacketsSent = 0;
+      int totalPacketsLost = 0; // Untuk menghitung packet loss
+      std::vector<simtime_t> packetLatencies; // Untuk menghitung latency
+      double lastPacketArrivalInterval = 0.0;
+
 };
 } //namespace inet
 #endif
