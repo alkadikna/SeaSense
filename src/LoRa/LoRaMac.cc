@@ -421,6 +421,7 @@ Packet *LoRaMac::encapsulate(Packet *msg)
     frame->setLoRaCR(tag->getCodeRendundance());
     frame->setSequenceNumber(sequenceNumber);
     frame->setReceiverAddress(MacAddress::BROADCAST_ADDRESS);
+    frame->setTimestamp(tag->getTimestamp());
 
     ++sequenceNumber;
     //frame->setLoRaUseHeader(cInfo->getLoRaUseHeader());

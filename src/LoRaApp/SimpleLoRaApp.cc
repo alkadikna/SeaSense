@@ -17,6 +17,7 @@
 #include "inet/mobility/static/StationaryMobility.h"
 #include "../LoRa/LoRaTagInfo_m.h"
 #include "inet/common/packet/Packet.h"
+#include "inet/common/TimeTag_m.h"
 
 
 namespace flora {
@@ -52,6 +53,7 @@ void SimpleLoRaApp::initialize(int stage)
         //timeToFirstPacket = par("timeToFirstPacket");
         sendMeasurements = new cMessage("sendMeasurements");
         scheduleAt(simTime()+timeToFirstPacket, sendMeasurements);
+        EV << "Timestamp di node (send time): " << simTime().dbl() << endl;
 
         sentPackets = 0;
         receivedADRCommands = 0;
@@ -132,6 +134,7 @@ void SimpleLoRaApp::handleMessage(cMessage *msg)
                 } while(timeToNextPacket <= time);
                 sendMeasurements = new cMessage("sendMeasurements");
                 scheduleAt(simTime() + timeToNextPacket, sendMeasurements);
+                EV << "Timestamp di node (send time): " << simTime().dbl() << endl;
             }
         }
     }
@@ -190,6 +193,13 @@ void SimpleLoRaApp::sendJoinRequest()
     lastSentMeasurement = rand();
     payload->setSampleMeasurement(lastSentMeasurement);
 
+    // Tambahkan timestamp ke payload
+//    payload->setTimestamp(simTime());
+//    auto creationTimeTag = payload->addTagIfAbsent<CreationTimeTag>();
+//    creationTimeTag->setCreationTime(simTime()); // Simpan waktu pengiriman
+//    EV << "Timestamp di node (send time): " << simTime().dbl() << endl;
+
+
     if(evaluateADRinNode && sendNextPacketWithADRACKReq)
     {
         auto opt = payload->getOptions();
@@ -206,6 +216,8 @@ void SimpleLoRaApp::sendJoinRequest()
     loraTag->setSpreadFactor(getSF());
     loraTag->setCodeRendundance(getCR());
     loraTag->setPower(mW(math::dBmW2mW(getTP())));
+    loraTag->setTimestamp(simTime());
+    EV << "Timestamp di node (send time): " << simTime().dbl() << endl;
 
     //add LoRa control info
   /*  LoRaMacControlInfo *cInfo = new LoRaMacControlInfo();

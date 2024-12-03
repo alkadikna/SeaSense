@@ -21,6 +21,8 @@
 #include "inet/applications/base/ApplicationPacket_m.h"
 #include "../LoRaPhy/LoRaRadioControlInfo_m.h"
 #include "inet/physicallayer/wireless/common/contract/packetlevel/SignalTag_m.h"
+#include "../LoRaApp/LoRaAppPacket_m.h"
+#include "inet/common/TimeTag_m.h"
 
 
 namespace flora {
@@ -38,12 +40,10 @@ void PacketForwarder::initialize(int stage)
         throughputSignal = registerSignal("throughputSignal");
         latencySignal = registerSignal("latencySignal");
         packetLossSignal = registerSignal("packetLossSignal");
-        jitterSignal = registerSignal("jitterSignal");
+        delaySignal = registerSignal("delaySignal");
 
         counterOfSentPacketsFromNodes = 0;
         counterOfReceivedPackets = 0;
-        lastPacketArrivalTime = SIMTIME_ZERO;
-        lastPacketArrivalInterval = 0.0;
 
     } else if (stage == INITSTAGE_APPLICATION_LAYER) {
         startUDP();
@@ -94,31 +94,42 @@ void PacketForwarder::handleMessage(cMessage *msg)
             processLoraMACPacket(pkt);
         //send(msg, "upperLayerOut");
         //sendPacket();
+//        auto creationTimeTag = pkt->findTag<CreationTimeTag>();
+////        // Ambil timestamp dari node
+//        simtime_t sendTime = creationTimeTag->getCreationTime(); // Timestamp dari node
+//        if (creationTimeTag != nullptr) {
+//            // If the tag exists, get the creation time
+//            sendTime = creationTimeTag->getCreationTime();
+//            EV << "Packet creation time: " << sendTime << endl;
+//        } else {
+//            // If the tag doesn't exist, handle the error or fallback
+//            EV_ERROR << "CreationTimeTag not found in packet!" << endl;
+//        }
+//
+//        EV << "Tag type: " << pkt->getTags() << endl;\
 
-        // Menghitung latency jika ada paket sebelumnya yang diterima
-        if (lastPacketArrivalTime != SIMTIME_ZERO) {
-            double latency = (simTime() - lastPacketArrivalTime).dbl(); // Latency dalam detik
-            emit(latencySignal, latency);
-        }
+//
+        simtime_t sendTime = frame->getTimestamp();
+        simtime_t receiveTime = simTime();          // Timestamp penerimaan di gateway
+        simtime_t latency = receiveTime - sendTime; // Hitung latency
 
-        lastPacketArrivalTime = simTime();  // Waktu kedatangan paket saat ini
-        counterOfReceivedPackets++;  // Menambah jumlah paket yang diterima
+        // Emit sinyal untuk latency
+        emit(latencySignal, latency.dbl());
+        EV << "Latency: " << latency.dbl() << " detik untuk SF: " << endl;
+        EV << "Timestamp dari node (send time): " << sendTime.dbl() << endl;
+        EV << "Receive time at gateway: " << receiveTime.dbl() << endl;
+
+        counterOfReceivedPackets++;          // Tambah jumlah paket diterima
+
 
         // Menghitung throughput: total paket diterima dibagi dengan waktu simulasi
-        double throughput = counterOfReceivedPackets / (simTime().dbl()); // throughput dalam paket per detik
+        double throughput = counterOfReceivedPackets * 800 / (simTime().dbl()); // throughput dalam bit per detik
         emit(throughputSignal, throughput);
 
         // Menghitung packet loss
         double packetLoss = (counterOfSentPacketsFromNodes - counterOfReceivedPackets) / double(counterOfSentPacketsFromNodes);
         emit(packetLossSignal, packetLoss);
 
-        // Menghitung jitter (perbedaan waktu kedatangan antar paket)
-        if (counterOfReceivedPackets > 1) {
-            double jitter = (simTime() - lastPacketArrivalTime).dbl() - lastPacketArrivalInterval;
-            emit(jitterSignal, jitter);
-        }
-
-        lastPacketArrivalInterval = (simTime() - lastPacketArrivalTime).dbl();  // Simpan interval antar kedatangan paket
 
 
     } else if (msg->arrivedOn("socketIn")) {
@@ -205,6 +216,7 @@ void PacketForwarder::receiveSignal(cComponent *source, simsignal_t signalID, in
 void PacketForwarder::finish()
 {
     recordScalar("LoRa_GW_DER", double(counterOfReceivedPackets)/counterOfSentPacketsFromNodes);
+    recordScalar("receivedPackets", counterOfReceivedPackets);
 }
 
 
