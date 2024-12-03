@@ -25,14 +25,12 @@ simple PacketForwarder like IApp
     @signal[throughputSignal](type=double);
 	@signal[latencySignal](type=double);
 	@signal[packetLossSignal](type=double);
-	@signal[jitterSignal](type=double);
 	
 	@statistic[LoRa_GWPacketReceived](source=LoRa_GWPacketReceived; record=count);
 	
     @statistic[throughput](title="Throughput"; source=throughputSignal; unit=bps; record=vector);
 	@statistic[latency](title="Latency"; source=latencySignal; unit=s; record=vector, mean, min, max);
 	@statistic[packetLoss](title="Packet Loss Ratio"; source=packetLossSignal; record=vector, mean, min, max);
-	@statistic[jitter](title="Jitter"; source=jitterSignal; unit=s; record=vector, mean, min, max);
 	
     int localPort = default(-1);  // local port (-1: use ephemeral port)
     string destAddresses = default(""); // list of IP addresses, separated by spaces ("": don't send)

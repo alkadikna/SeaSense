@@ -41,4 +41,5 @@ class LoRaMacFrame extends inet::FieldsChunk {
     bool LoRaUseHeader;
     double RSSI;
     double SNIR;
+    simtime_t timestamp;
 }

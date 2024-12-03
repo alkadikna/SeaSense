@@ -32,4 +32,5 @@ class LoRaTag extends inet::TagBase
     inet::W power = mW(100);
     bool UseHeader = true;
     int codeRendundance = 1;
+    simtime_t timestamp;
 }
